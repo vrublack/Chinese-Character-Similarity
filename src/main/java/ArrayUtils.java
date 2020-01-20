@@ -8,9 +8,20 @@ public final class ArrayUtils {
     }
 
     public static int[] argsort(final float[] a, final boolean ascending) {
-        Integer[] indexes = new Integer[a.length];
-        for (int i = 0; i < indexes.length; i++) {
-            indexes[i] = i;
+        // don't sort ones that are zero
+        int nonzero = 0;
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] != 0)
+                nonzero++;
+        }
+
+        Integer[] indexes = new Integer[nonzero];
+        int count = 0;
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] != 0) {
+                indexes[count] = i;
+                count++;
+            }
         }
         Arrays.sort(indexes, new Comparator<Integer>() {
             @Override

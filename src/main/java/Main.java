@@ -95,20 +95,30 @@ public class Main {
         if (c1.equals(c2))
             return 1;
 
+        // component overlap
         float totalScore = 0;
         String[] dc1 = decomp.get(c1);
         String[] dc2 = decomp.get(c2);
 
-        // component overlap
         for (String comp1 : dc1) {
             for (String comp2 : dc2) {
                 if (comp1.equals(comp2)) {
-                    totalScore += 1;
+                    totalScore++;
+                    break;
                 }
             }
         }
 
-        totalScore /= dc1.length * dc2.length;
+        for (String comp2 : dc2) {
+            for (String comp1 : dc1) {
+                if (comp1.equals(comp2)) {
+                    totalScore++;
+                    break;
+                }
+            }
+        }
+
+        totalScore /= dc1.length + dc2.length;
 
         return totalScore;
     }

@@ -30,49 +30,6 @@ public class Main {
         return result;
     }
 
-    private static void writeSimilarityMatrix(String decompositionFname, String outFname) {
-        Map<String, String[]> decomp = readDecomposition(decompositionFname);
-        List<String> allChars = new ArrayList<>(decomp.keySet());
-        try {
-            BufferedWriter br = new BufferedWriter(new FileWriter(new File(outFname)));
-            final long totalPairs = allChars.size() * ((long) allChars.size());
-
-            // write index to first line
-            for (int i = 0; i < allChars.size(); i++) {
-                br.write(allChars.get(i));
-                if (i < allChars.size() - 1)
-                    br.write(",");
-            }
-            br.write("\n");
-
-            long count = 0;
-            for (int i = 0; i < allChars.size(); i++) {
-                // could start at j = i and then cache but cache would be very large
-                for (int j = 0; j < allChars.size(); j++) {
-                    float sim = calculateCharSimilarity(allChars.get(i), allChars.get(j), decomp);
-                    String formatted;
-                    if (sim == 0) {
-                        // save space
-                        formatted = "0";
-                    } else {
-                        formatted = String.format("%.4f", sim);
-                    }
-                    br.write(formatted);
-                    if (j < allChars.size() - 1)
-                        br.write(" ");
-                    count++;
-                    if (count % 1000000 == 0)
-                        System.out.println(NumberFormat.getIntegerInstance().format(count) + "/" + NumberFormat.getIntegerInstance().format(totalPairs));
-                }
-                br.write("\n");
-            }
-            br.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-    }
-
     /***
      *
      * @param args 0 - method, 1 - decomp filename, 2 - matrix output filename, 3 - sorted similarity list output filename, 4 - number of similar characters to include
@@ -82,39 +39,52 @@ public class Main {
             System.out.println("Warning: DEBUG is turned on");
         }
 
-        switch (args[0]) {
-            case "matrix":
-                writeSimilarityMatrix(args[1], args[2]);
-                break;
-            case "sort":
-                sortSimilarities(args[2], args[3], Integer.parseInt(args[4]));
-                break;
-            default:
-                System.out.println("Error: unknown method");
-                System.exit(1);
-        }
+        String decompositionFname = args[0];
+        String outputFname = args[1];
+        int cutoff = Integer.parseInt(args[2]);
 
-        System.out.println("Done");
-    }
-
-    private static void sortSimilarities(String matrixFname, String outFname, int cutoff) {
-        BufferedReader reader;
+        Map<String, String[]> decomp = readDecomposition(decompositionFname);
+        List<String> allChars = new ArrayList<>(decomp.keySet());
         try {
-            reader = new BufferedReader(new FileReader(new File(matrixFname)));
-            String line = reader.readLine();    // character index
-            String[] allChars = line.split(",");
-            while ((line = reader.readLine()) != null) {
-                String[] formattedSims = line.split(" ");
-                float[] sims = new float[formattedSims.length];
-                for (int i = 0; i < sims.length; i++)
-                    sims[i] = Float.parseFloat(formattedSims[i]);
-                // TODO argsort
+            BufferedWriter br = new BufferedWriter(new FileWriter(new File(outputFname)));
+            final long totalPairs = allChars.size() * ((long) allChars.size());
+
+            long count = 0;
+            float[] similarities = new float[allChars.size()];
+            for (int i = 0; i < allChars.size(); i++) {
+                // could start at j = i and then cache but cache would be very large
+                for (int j = 0; j < allChars.size(); j++) {
+                    // don't want the character itself
+                    if (i != j) {
+                        similarities[j] = calculateCharSimilarity(allChars.get(i), allChars.get(j), decomp);
+                    } else {
+                        similarities[j] = 0;
+                    }
+                    count++;
+                    if (count % 1000000 == 0)
+                        System.out.println(NumberFormat.getIntegerInstance().format(count) + "/" + NumberFormat.getIntegerInstance().format(totalPairs));
+                }
+
+                br.write(allChars.get(i) + ";");
+                int[] similarSorted = ArrayUtils.argsort(similarities, false);
+                // don't write chars to file that have similarity 0
+                for (int j = 0; j < Math.min(similarSorted.length, cutoff) && similarities[similarSorted[j]] > 0; j++) {
+                    if (j > 0)
+                        br.write(",");
+                    br.write(allChars.get(similarSorted[j]));
+                }
+                br.write("\n");
             }
+            br.close();
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);
         }
+
+
+        System.out.println("Done");
     }
+
 
     /***
      *

@@ -5,8 +5,8 @@ import java.util.*;
 public class Main {
     public static boolean DEBUG = true;
 
-    private static Map<String, Set<String>> readDecomposition(String fname) {
-        Map<String, Set<String>> result = new HashMap<>();
+    private static Map<String, String[]> readDecomposition(String fname) {
+        Map<String, String[]> result = new HashMap<>();
         BufferedReader reader;
         try {
             reader = new BufferedReader(new FileReader(new File(fname)));
@@ -14,10 +14,12 @@ public class Main {
             int count = 0;
             while ((line = reader.readLine()) != null) {
                 count++;
-                if (DEBUG && count % 30 != 0)
+                if (DEBUG && count % 20 != 0)
                     continue;
                 String[] comps = line.split(";");
-                result.put(comps[0], new HashSet<>(Arrays.asList(comps[1].split(","))));
+                String[] decompComps = comps[1].split(",");
+                Arrays.sort(decompComps);
+                result.put(comps[0], decompComps);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -42,7 +44,7 @@ public class Main {
         String outputFname = args[1];
         int cutoff = Integer.parseInt(args[2]);
 
-        Map<String, Set<String>> decomp = readDecomposition(decompositionFname);
+        Map<String, String[]> decomp = readDecomposition(decompositionFname);
         List<String> allChars = new ArrayList<>(decomp.keySet());
         try {
             BufferedWriter br = new BufferedWriter(new FileWriter(new File(outputFname)));
@@ -88,19 +90,33 @@ public class Main {
      *
      * @return Value between 0 (very dissimilar) and 1 (identical)
      */
-    private static float calculateCharSimilarity(String c1, String c2, Map<String, Set<String>> decomp) {
+    private static float calculateCharSimilarity(String c1, String c2, Map<String, String[]> decomp) {
         if (c1.equals(c2))
             return 1;
 
         // component overlap
-        // since they are sets, duplicate components will be regarded as one
         float totalScore = 0;
-        Set<String> dc1 = decomp.get(c1);
-        Set<String> dc2 = decomp.get(c2);
+        String[] dc1 = decomp.get(c1);
+        String[] dc2 = decomp.get(c2);
 
-        for (String comp1 : dc1) {
-            if (dc2.contains(comp1)) {
-                totalScore++;
+        int i = 0;
+        int j = 0;
+
+        while (i < dc1.length && j < dc2.length) {
+            if (dc1[i].equals(dc2[j])) {
+                String sameComp = dc1[i];
+                while (i < dc1.length && dc1[i].equals(sameComp)) {
+                    i++;
+                    totalScore++;
+                }
+                while (j < dc2.length && dc2[j].equals(sameComp)) {
+                    j++;
+                    totalScore++;
+                }
+            } else if (dc1[i].compareTo(dc2[j]) < 0) {  // advance pointer to smaller component
+                i++;
+            } else {
+                j++;
             }
         }
 

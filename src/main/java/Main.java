@@ -17,7 +17,7 @@ public class Main {
             int count = 0;
             while ((line = reader.readLine()) != null) {
                 count++;
-                if (DEBUG && count % 1000 != 0)
+                if (DEBUG && count % 50 != 0)
                     continue;
                 String[] comps = line.split(";");
                 result.put(comps[0], comps[1].split(","));
@@ -35,6 +35,8 @@ public class Main {
      * @param args 0 - method, 1 - decomp filename, 2 - matrix output filename, 3 - sorted similarity list output filename, 4 - number of similar characters to include
      */
     public static void main(String[] args) {
+        long start = System.currentTimeMillis();
+
         if (DEBUG) {
             System.out.println("Warning: DEBUG is turned on");
         }
@@ -81,8 +83,7 @@ public class Main {
             System.exit(1);
         }
 
-
-        System.out.println("Done");
+        System.out.println("Done after " + (System.currentTimeMillis() - start) + " ms");
     }
 
 

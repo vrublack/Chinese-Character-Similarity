@@ -104,13 +104,7 @@ public class Main {
             }
         }
 
-        for (String comp2 : dc2) {
-            if (dc1.contains(comp2)) {
-                totalScore++;
-            }
-        }
-
-        totalScore /= dc1.size() + dc2.size();
+        totalScore /= dc1.length + dc2.length;
 
         return totalScore;
     }

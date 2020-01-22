@@ -29,6 +29,27 @@ public class Main {
         return result;
     }
 
+    private static List<String[]> readTestcases(String fname) {
+        List<String[]> result = new ArrayList<>();
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(new File(fname)));
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null) {
+                count++;
+                if (DEBUG && count % 20 != 0)
+                    continue;
+                result.add(line.split(","));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        return result;
+    }
+
     private static void write(final BufferedWriter br, final String s) throws IOException {
         synchronized(br) {
             br.write(s);
@@ -69,16 +90,29 @@ public class Main {
      * @param args 0 - method, 1 - decomp filename, 2 - matrix output filename, 3 - sorted similarity list output filename, 4 - number of similar characters to include
      */
     public static void main(String[] args) {
-        long start = System.currentTimeMillis();
-
         if (DEBUG) {
             System.out.println("Warning: DEBUG is turned on");
         }
 
-        final String decompositionFname = args[0];
-        final String outputFname = args[1];
-        final int cutoff = Integer.parseInt(args[2]);
-        final int nThreads = Integer.parseInt(args[3]);
+        if (args.length > 0 && args[0].equals("create"))
+        {
+            createSimilarityRanking(args);
+        } else if (args.length > 0 && args[0].equals("evaluate"))
+        {
+            evaluateSimilarityRanking(args);
+        } else {
+            System.err.println("Unknown method");
+            System.exit(1);
+        }
+    }
+
+    private static void createSimilarityRanking(String[] args) {
+        long start = System.currentTimeMillis();
+
+        final String decompositionFname = args[1];
+        final String outputFname = args[2];
+        final int cutoff = Integer.parseInt(args[3]);
+        final int nThreads = Integer.parseInt(args[4]);
 
         final Map<String, String[]> decomp = readDecomposition(decompositionFname);
         final List<String> allChars = new ArrayList<>(decomp.keySet());
@@ -120,6 +154,63 @@ public class Main {
             System.exit(1);
         }
 
+        System.out.println("Done after " + (System.currentTimeMillis() - start) + " ms");
+    }
+
+    private static void evaluateSimilarityRanking(String[] args) {
+        long start = System.currentTimeMillis();
+
+        final String decompositionFname = args[1];
+        final String testcasesFname = args[2];
+
+        final Map<String, String[]> decomp = readDecomposition(decompositionFname);
+        final List<String[]> testcases = readTestcases(testcasesFname);
+        final List<String> allChars = new ArrayList<>(decomp.keySet());
+
+        float totalScore = 0;
+        int posSum = 0;
+        int posCount = 0;
+
+        final float[] similarities = new float[allChars.size()];
+        for (int i = 0; i < testcases.size(); i++) {
+            String character = testcases.get(i)[0];
+            if (!decomp.containsKey(character)) {
+                System.out.println("Skipping " + character + " because it's not included in the decomp");
+                continue;
+            }
+            for (int j = 0; j < allChars.size(); j++) {
+                // don't want the character itself
+                if (!character.equals(allChars.get(j))) {
+                    similarities[j] = calculateCharSimilarity(character, allChars.get(j), decomp);
+                } else {
+                    similarities[j] = 0;
+                }
+            }
+
+            int[] similarSorted = ArrayUtils.argsort(similarities, false);
+
+            // check how reference characters were ranked
+            float score = 0;
+            for (int k = 1; k < testcases.get(i).length; k++) {
+                int rankedPos = -1;
+                for (int pos = 0; pos < similarSorted.length; pos++) {     // TODO could use map
+                    if (allChars.get(similarSorted[pos]).equals(testcases.get(i)[k])) {
+                        rankedPos = pos;
+                        posSum += pos;
+                        posCount++;
+                        break;
+                    }
+                }
+                if (rankedPos == -1)
+                    rankedPos = 10000000;
+
+                score += 1.0f / k * 1.0f / (rankedPos + 1);
+            }
+            totalScore += score;
+        }
+
+        System.out.println("Score: " + totalScore);
+        System.out.println("Avg position: " + (float) posSum / posCount);
         System.out.println("Done after " + (System.currentTimeMillis() - start) + " ms");
     }
 

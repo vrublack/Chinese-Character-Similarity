@@ -19,7 +19,7 @@
         <module name="CharacterSimilarity" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
+    <bytecodeTargetLevel target="11">
       <module name="CharacterSimilarity" target="11" />
     </bytecodeTargetLevel>
   </component>

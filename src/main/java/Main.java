@@ -35,6 +35,34 @@ public class Main {
         }
     }
 
+    private static void computeSimilarityRanking(List<String> allChars, float[] similarities, Map<String, String[]> decomp, int cutoff, int i, final BufferedWriter br) {
+        // could start at j = i and then cache but cache would be very large
+        for (int j = 0; j < allChars.size(); j++) {
+            // don't want the character itself
+            if (i != j) {
+                similarities[j] = calculateCharSimilarity(allChars.get(i), allChars.get(j), decomp);
+            } else {
+                similarities[j] = 0;
+            }
+        }
+
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append(allChars.get(i)).append(";");
+            int[] similarSorted = ArrayUtils.argsort(similarities, false);
+            // don't write chars to file that have similarity 0
+            for (int j = 0; j < Math.min(similarSorted.length, cutoff) && similarities[similarSorted[j]] > 0; j++) {
+                if (j > 0)
+                    sb.append(",");
+                sb.append(allChars.get(similarSorted[j]));
+            }
+            sb.append("\n");
+            write(br, sb.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
 
     /***
      *
@@ -47,17 +75,15 @@ public class Main {
             System.out.println("Warning: DEBUG is turned on");
         }
 
-        String decompositionFname = args[0];
-        String outputFname = args[1];
-        int cutoff = Integer.parseInt(args[2]);
+        final String decompositionFname = args[0];
+        final String outputFname = args[1];
+        final int cutoff = Integer.parseInt(args[2]);
+        final int nThreads = Integer.parseInt(args[3]);
 
-        Map<String, String[]> decomp = readDecomposition(decompositionFname);
-        List<String> allChars = new ArrayList<>(decomp.keySet());
+        final Map<String, String[]> decomp = readDecomposition(decompositionFname);
+        final List<String> allChars = new ArrayList<>(decomp.keySet());
         try {
             final BufferedWriter br = new BufferedWriter(new FileWriter(new File(outputFname)));
-            final long totalPairs = allChars.size() * ((long) allChars.size());
-
-            final int nThreads = 4;
             Thread[] threads = new Thread[nThreads];
             final int itemsPerThread = allChars.size() / nThreads;
             for (int iThread = 0; iThread < threads.length; iThread++) {
@@ -66,37 +92,11 @@ public class Main {
                 threads[iThread] = new Thread() {
                     @Override
                     public void run() {
-                        float[] similarities = new float[allChars.size()];
+                        final float[] similarities = new float[allChars.size()];
                         for (int i = startIndex; i < endIndex; i++) {
-                            // could start at j = i and then cache but cache would be very large
-                            for (int j = 0; j < allChars.size(); j++) {
-                                // don't want the character itself
-                                if (i != j) {
-                                    similarities[j] = calculateCharSimilarity(allChars.get(i), allChars.get(j), decomp);
-                                } else {
-                                    similarities[j] = 0;
-                                }
-                            }
+                            computeSimilarityRanking(allChars, similarities, decomp, cutoff, i, br);
                             if ((i - startIndex) % 100 == 0)
                                 System.out.println(NumberFormat.getIntegerInstance().format(i - startIndex) + "/" + NumberFormat.getIntegerInstance().format(endIndex - startIndex));
-
-                            try {
-                                // TODO concat first
-                                StringBuilder sb = new StringBuilder();
-                                sb.append(allChars.get(i)).append(";");
-                                int[] similarSorted = ArrayUtils.argsort(similarities, false);
-                                // don't write chars to file that have similarity 0
-                                for (int j = 0; j < Math.min(similarSorted.length, cutoff) && similarities[similarSorted[j]] > 0; j++) {
-                                    if (j > 0)
-                                        sb.append(",");
-                                    sb.append(allChars.get(similarSorted[j]));
-                                }
-                                sb.append("\n");
-                                write(br, sb.toString());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                System.exit(1);
-                            }
                         }
 
                     }

@@ -250,13 +250,17 @@ public class Main {
         while (i < dc1.length && j < dc2.length) {
             if (dc1[i].equals(dc2[j])) {
                 String sameComp = dc1[i];
+                while (i < dc1.length && dc1[i].equals(sameComp) && j < dc2.length && dc2[j].equals(sameComp)) {
+                    i++;
+                    j++;
+                    totalScore += 2;
+                }
+                // additional occurrences of the same character in only one decomposition don't increase the score
                 while (i < dc1.length && dc1[i].equals(sameComp)) {
                     i++;
-                    totalScore++;
                 }
                 while (j < dc2.length && dc2[j].equals(sameComp)) {
                     j++;
-                    totalScore++;
                 }
             } else if (dc1[i].compareTo(dc2[j]) < 0) {  // advance pointer to smaller component
                 i++;

@@ -168,6 +168,7 @@ public class Main {
         final List<String> allChars = new ArrayList<>(decomp.keySet());
 
         float totalScore = 0;
+        int scoreCount = 0;
         int posSum = 0;
         int posCount = 0;
 
@@ -189,7 +190,13 @@ public class Main {
 
             int[] similarSorted = ArrayUtils.argsort(similarities, false);
 
+            StringBuilder sb = new StringBuilder();
+            for (int pos = 0; pos < Math.min(20, similarSorted.length); pos++) {
+                sb.append(allChars.get(similarSorted[pos]) + " ");
+            }
+
             // check how reference characters were ranked
+            List<Integer> positions = new ArrayList<>();
             float score = 0;
             for (int k = 1; k < testcases.get(i).length; k++) {
                 int rankedPos = -1;
@@ -204,12 +211,21 @@ public class Main {
                 if (rankedPos == -1)
                     rankedPos = 10000000;
 
+                positions.add(rankedPos);
+
                 score += 1.0f / k * 1.0f / (rankedPos + 1);
+                scoreCount++;
             }
             totalScore += score;
+
+            System.out.print("Character " + character + ": " + sb.toString() + ", Reference: ");
+            for (int k = 1; k < testcases.get(i).length; k++) {
+                System.out.print(testcases.get(i)[k] + " (" + positions.get(k - 1) + "), ");
+            }
+            System.out.println(" -> Score " + score);
         }
 
-        System.out.println("Score: " + totalScore);
+        System.out.println("Avg score: " + totalScore / scoreCount);
         System.out.println("Avg position: " + (float) posSum / posCount);
         System.out.println("Done after " + (System.currentTimeMillis() - start) + " ms");
     }

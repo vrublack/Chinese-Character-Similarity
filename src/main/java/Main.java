@@ -106,15 +106,112 @@ public class Main {
         }
     }
 
+    /**
+     * Take the cjk decomposition and recursively (until it hits a character from the stop radicals)
+     * creates a list of all radicals the character consists of
+     * @param args
+     */
+    private static Map<String, String[]> flattenDecomposition(String[] args)
+    {
+        String cjkDecompPath = args[1];
+        String stopRadicalsPath = args[2];
+
+        Set<String> radicals = readRadicals(stopRadicalsPath);
+        Map<String, String[]> decomp = readCjkDecomp(cjkDecompPath);
+
+        Map<String, String[]> flattened = new HashMap<>();
+        for (String character : decomp.keySet()) {
+            decomposeComponent(character, radicals, decomp, flattened);
+        }
+
+        for (String[] charDecomp : flattened.values()) {
+            Arrays.sort(charDecomp);
+        }
+
+        return flattened;
+    }
+
+    private static List<String> decomposeComponent(String comp, Set<String> radicals, Map<String, String[]> decomp, Map<String, String[]> flattened)
+    {
+        String[] d = decomp.get(comp);
+        List<String> all = new ArrayList<>();
+        if (d.length == 1) {
+            all.add(d[0]);
+        }
+        else if (d.length == 0 || radicals.contains(comp)) {
+            all.add(comp);
+        }
+        else
+        {
+            for (String subcomp : d)
+                all.addAll(decomposeComponent(subcomp, radicals, decomp, flattened));
+        }
+        flattened.put(comp, all.toArray(new String[all.size()]));
+        return all;
+    }
+
+    private static Map<String, String[]> readCjkDecomp(String path)
+    {
+        Map<String, String[]> result = new HashMap<>();
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(new File(path)));
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null) {
+                count++;
+                if (DEBUG && count % 20 != 0)
+                    continue;
+                String[] ss = line.split(":");
+                assert(ss.length == 2);
+                String allList = ss[1].substring(ss[1].indexOf('(')+1, ss[1].indexOf(')'));
+
+                String[] comps;
+                if (allList.length() == 0) {
+                    comps = new String[] {};
+                } else {
+                    comps = allList.split(",");
+                }
+                result.put(ss[0], comps);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        return result;
+    }
+
+    private static Set<String> readRadicals(String path)
+    {
+        Set<String> result = new HashSet<>();
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(new File(path)));
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null) {
+                count++;
+                if (DEBUG && count % 20 != 0)
+                    continue;
+                result.add(line.split(",")[0]);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        return result;
+    }
+
     private static void createSimilarityRanking(String[] args) {
         long start = System.currentTimeMillis();
 
-        final String decompositionFname = args[1];
-        final String outputFname = args[2];
-        final int cutoff = Integer.parseInt(args[3]);
-        final int nThreads = Integer.parseInt(args[4]);
+        final Map<String, String[]> decomp = flattenDecomposition(args);
+        final String outputFname = args[3];
+        final int cutoff = Integer.parseInt(args[4]);
+        final int nThreads = Integer.parseInt(args[5]);
 
-        final Map<String, String[]> decomp = readDecomposition(decompositionFname);
         final List<String> allChars = new ArrayList<>(decomp.keySet());
         try {
             final BufferedWriter br = new BufferedWriter(new FileWriter(new File(outputFname)));
@@ -160,10 +257,9 @@ public class Main {
     private static void evaluateSimilarityRanking(String[] args) {
         long start = System.currentTimeMillis();
 
-        final String decompositionFname = args[1];
-        final String testcasesFname = args[2];
+        final String testcasesFname = args[3];
 
-        final Map<String, String[]> decomp = readDecomposition(decompositionFname);
+        final Map<String, String[]> decomp = flattenDecomposition(args);
         final List<String[]> testcases = readTestcases(testcasesFname);
         final List<String> allChars = new ArrayList<>(decomp.keySet());
 

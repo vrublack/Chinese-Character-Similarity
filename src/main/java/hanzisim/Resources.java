@@ -135,8 +135,22 @@ public class Resources  {
                 all.addAll(decomposeComponent(d.comps[0], radicals, decomp, flattened, left, right, top, vSplit));
                 all.addAll(decomposeComponent(d.comps[1], radicals, decomp, flattened, left, right, vSplit, bottom));
             } else if (d.modifier.startsWith("r")) {
-                // TODO
-                all.addAll(decomposeComponent(d.comps[0], radicals, decomp, flattened, left, right, top, bottom));
+                assert(d.comps.length == 1);
+                int repititions;
+                if (d.modifier.startsWith("rot")) {
+                    // don't include punishing term as of right now
+                    repititions = 1;
+                } else if (Character.isDigit(d.modifier.charAt(1))) {
+                    repititions = Integer.parseInt(String.valueOf(d.modifier.charAt(1)));
+                } else if (d.modifier.startsWith("rr") || d.modifier.startsWith("ra") || d.modifier.startsWith("rd") || d.modifier.startsWith("rst")) {
+                    repititions = 2;
+                }
+                else {
+                    repititions = 1;
+                }
+                List<FlatDecomp> children = decomposeComponent(d.comps[0], radicals, decomp, flattened, left, right, top, bottom);
+                for (int i = 0; i < repititions; i++)
+                    all.addAll(children);
             } else {
                 // unknow, assume they both cover the width of the component
                 for (String subcomp : d.comps)

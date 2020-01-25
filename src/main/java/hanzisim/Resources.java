@@ -253,6 +253,30 @@ public class Resources  {
         return result;
     }
 
+    public static Map<String, String[]> readJapaneseToSimplChinese(String fname) {
+        Map<String, String[]> result = new HashMap<>();
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(new File(fname)));
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null) {
+                if (count >= 17) {  // header
+                    String[] comps = line.split("\t");
+                    String jpn = comps[0];
+                    String chn = comps[2];
+                    result.put(jpn, chn.split(","));
+                }
+                count++;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        return result;
+    }
+
     public static void write(final BufferedWriter br, final String s) throws IOException {
         synchronized (br) {
             br.write(s);

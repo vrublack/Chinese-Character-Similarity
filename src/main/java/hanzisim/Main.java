@@ -6,12 +6,13 @@ import java.util.*;
 
 public class Main {
 
-    private static void computeSimilarityRanking(List<String> allChars, float[] similarities, Map<String, FlatDecomp[]> decomp, int cutoff, int i, final BufferedWriter br) {
+    private static void computeSimilarityRanking(List<String> allChars, float[] similarities, Map<String, FlatDecomp[]> decomp, Map<String, String[]> jpnToChin,
+                                                 int cutoff, int i, final BufferedWriter br) {
         // could start at j = i and then cache but cache would be very large
         for (int j = 0; j < allChars.size(); j++) {
             // don't want the character itself
             if (i != j) {
-                similarities[j] = calculateCharSimilarity(allChars.get(i), allChars.get(j), decomp);
+                similarities[j] = calculateCharSimilarity(allChars.get(i), allChars.get(j), decomp, jpnToChin);
             } else {
                 similarities[j] = 0;
             }
@@ -58,9 +59,13 @@ public class Main {
         long start = System.currentTimeMillis();
 
         final Map<String, FlatDecomp[]> decomp = Resources.flattenDecomposition(args);
+
         final String outputFname = args[3];
         final int cutoff = Integer.parseInt(args[4]);
         final int nThreads = Integer.parseInt(args[5]);
+        final String jpnToChinFname = args[6];
+
+        final Map<String, String[]> jpnToChin = Resources.readJapaneseToSimplChinese(jpnToChinFname);
 
         final List<String> allChars = new ArrayList<>(decomp.keySet());
         try {
@@ -75,7 +80,7 @@ public class Main {
                     public void run() {
                         final float[] similarities = new float[allChars.size()];
                         for (int i = startIndex; i < endIndex; i++) {
-                            computeSimilarityRanking(allChars, similarities, decomp, cutoff, i, br);
+                            computeSimilarityRanking(allChars, similarities, decomp, jpnToChin, cutoff, i, br);
                             if ((i - startIndex) % 100 == 0)
                                 System.out.println(NumberFormat.getIntegerInstance().format(i - startIndex) + "/" + NumberFormat.getIntegerInstance().format(endIndex - startIndex));
                         }
@@ -108,10 +113,12 @@ public class Main {
         long start = System.currentTimeMillis();
 
         final String testcasesFname = args[3];
+        final String jpnToChinFname = args[4];
 
         final Map<String, FlatDecomp[]> decomp = Resources.flattenDecomposition(args);
         final List<String[]> testcases = Resources.readTestcases(testcasesFname);
         final List<String> allChars = new ArrayList<>(decomp.keySet());
+        final Map<String, String[]> jpnToChin = Resources.readJapaneseToSimplChinese(jpnToChinFname);
 
         float totalScore = 0;
         int scoreCount = 0;
@@ -130,7 +137,7 @@ public class Main {
             for (int j = 0; j < allChars.size(); j++) {
                 // don't want the character itself
                 if (!character.equals(allChars.get(j))) {
-                    similarities[j] = calculateCharSimilarity(character, allChars.get(j), decomp);
+                    similarities[j] = calculateCharSimilarity(character, allChars.get(j), decomp, jpnToChin);
                 } else {
                     similarities[j] = 0;
                 }
@@ -188,9 +195,26 @@ public class Main {
      *
      * @return Value between 0 (very dissimilar) and 1 (identical)
      */
-    private static float calculateCharSimilarity(String c1, String c2, Map<String, FlatDecomp[]> decomp) {
+    private static float calculateCharSimilarity(String c1, String c2, Map<String, FlatDecomp[]> decomp, Map<String, String[]> jpnToChin) {
         if (c1.equals(c2))
             return 1;
+
+        // if one is the simplified version of the other, return almost perfect match
+        if (jpnToChin.containsKey(c1)) {
+            assert(!jpnToChin.containsKey(c2));
+            for (String conv : jpnToChin.get(c1)) {
+                if (conv.equals(c2)) {
+                    return 0.99f;
+                }
+            }
+        } else if (jpnToChin.containsKey(c2)) {
+            assert(!jpnToChin.containsKey(c1));
+            for (String conv : jpnToChin.get(c2)) {
+                if (conv.equals(c1)) {
+                    return 0.99f;
+                }
+            }
+        }
 
         // component overlap
         float totalScore = 0;

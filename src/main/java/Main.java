@@ -470,8 +470,6 @@ public class Main {
         if (c1.equals(c2))
             return 1;
 
-        // TODO incorporate positions within the character
-
         // component overlap
         float totalScore = 0;
         FlatDecomp[] dc1 = decomp.get(c1);
@@ -483,11 +481,8 @@ public class Main {
         while (i < dc1.length && j < dc2.length) {
             if (dc1[i].comp.equals(dc2[j].comp)) {
                 String sameComp = dc1[i].comp;
-                while (i < dc1.length && dc1[i].comp.equals(sameComp) && j < dc2.length && dc2[j].comp.equals(sameComp)) {
-                    i++;
-                    j++;
-                    totalScore += 2;
-                }
+                final int startI = i;
+                final int startJ = j;
                 // additional occurrences of the same character in only one decomposition don't increase the score
                 while (i < dc1.length && dc1[i].comp.equals(sameComp)) {
                     i++;
@@ -495,6 +490,25 @@ public class Main {
                 while (j < dc2.length && dc2[j].comp.equals(sameComp)) {
                     j++;
                 }
+
+                final int occs1 = i - startI;
+                final int occs2 = j - startJ;
+
+                float[] pairSimilarities = new float[occs1 * occs2];
+                // match every occurrence from dc1 with dc2
+                for (int matchI = startI; matchI < i; matchI++) {
+                    for (int matchJ = startJ; matchJ < j; matchJ++) {
+                        pairSimilarities[(matchI - startI) * occs2 + (matchJ - startJ)] = calculatePositionSimilarity(dc1[matchI].centerHorizontal,
+                                dc1[matchI].centerVertical, dc2[matchJ].centerHorizontal, dc2[matchJ].centerVertical);
+                    }
+                }
+                Arrays.sort(pairSimilarities);
+                // take the K top probabilities so that every component can only be matched once
+                final int K = Math.min(occs1, occs2);
+                for (int k = pairSimilarities.length - 1; k >= pairSimilarities.length - K; k--) {
+                    totalScore += 2 * pairSimilarities[k];
+                }
+
             } else if (dc1[i].comp.compareTo(dc2[j].comp) < 0) {  // advance pointer to smaller component
                 i++;
             } else {
@@ -505,5 +519,15 @@ public class Main {
         totalScore /= dc1.length + dc2.length;
 
         return totalScore;
+    }
+
+    private static float calculatePositionSimilarity(float centerH1, float centerV1, float centerH2, float centerV2) {
+        float hDist = Math.abs(centerH1 - centerH2);
+        float vDist = Math.abs(centerV1 - centerV2);
+        // euclidean distance
+        float dist = (float) Math.sqrt(hDist * hDist + vDist * vDist);
+        // normalize so that dist <= 1
+        dist /= (float) Math.sqrt(2);
+        return 1 - dist;
     }
 }

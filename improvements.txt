@@ -1,0 +1,119 @@
+䴁;宀,㇑,㇆,㇐,㇑,禸,鳥
+
+寓;宀,㇑,㇆,㇐,㇑,禸
+
+隅;阝,㇑,㇆,㇐,㇑,禸
+
++ positional information (left/right/up/down)
+
+
+
+
+脸;月,㇒,㇐,37543,㇐
+
+㬴;月,㇑,㇐,㇐,㇒
+
+应;广,37543,㇐
+
++ possibly do fewer decomposition splits
+
++ possibly weigh how common a component is
+
+
+
+
+
+
+晨;日,辰
+
+𣊭;日
+
++ repeat information (eg. 𣊭;日 4 times)
+
+
+
+
+
+備
+备
+
++ include simplified chinese <-> japanese mappings
+
+
+
+
+坏:a(土,不)
+	土:d/t(十,㇐)
+坏;土,㇐,㇓,卜
+
+
+环:a(王,不)
+	王:d/t(㇐,土)
+环;王,㇐,㇓,卜
+
+
++ decompose further than radicals (maybe combine with position information)
++ include radical similarity table
+
+
+
+
+戴;土,戈,田,㇑,㇐,㇐,㇒
+載;土,戈,車
+	車:w(37024,日)
+		37024:lock(二,㇑)
+㦼;㇐,㇐,㇑,㇒,彐,戈
+
+
++ maybe include positional information
+(not much that can be done if one partial decomp is 田,㇑,㇐,㇐,㇒ and the other one 車)
+
+
+
+
+
+刺;木,㇑,㇆,刂
+制;牛,巾,刂
+
+
+- difficult
+
+
+
+
+鞄;革,勹,尸,㇟
+鞋;革,土
+
++ use idf weighting (as in tf-idf)
+
+
+
+
+
+绿;纟,彐,㇚,冫,冫
+䰁;髟,彐,㇚,冫,冫
+
+
+
+
++ with cjk decomposition often stops soon. use wikipedia again?
+
+
+
+cjkvi has many unencoded components and might be unsuitable for this task because they are any unencoded component with that stroke number, not a specific one:
+Encircled numerics ① ～ ⑳ represents unencoded DCs. Number denotes its stroke count. This would be useful when calculating total strokes of ideographs. Such convention does not conform with the Annex I of ISO/IEC 10646, so please replace them with wildcard character `？' (U+FF1F) if you need a strict conformance with the UCS standard.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

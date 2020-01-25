@@ -177,7 +177,7 @@ public class Main {
 
         CjkDecomp d = decomp.get(comp);
         List<FlatDecomp> all = new ArrayList<>();
-        if (d.comps.length == 0) {
+        if (d.comps.length == 0 || radicals.contains(comp)) {
             all.add(new FlatDecomp(comp, left, right, top, bottom));
         }
         else

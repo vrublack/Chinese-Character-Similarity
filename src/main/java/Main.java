@@ -106,6 +106,21 @@ public class Main {
         }
     }
 
+    private static class CjkDecomp {
+        String modifier;
+        String[] comps;
+
+        public CjkDecomp(String modifier, String[] comps)
+        {
+            this.modifier = modifier;
+            this.comps = comps;
+        }
+    }
+
+    private static class FlatDecomp {
+
+    }
+
     /**
      * Take the cjk decomposition and recursively (until it hits a character from the stop radicals)
      * creates a list of all radicals the character consists of
@@ -117,7 +132,7 @@ public class Main {
         String stopRadicalsPath = args[2];
 
         Set<String> radicals = readRadicals(stopRadicalsPath);
-        Map<String, String[]> decomp = readCjkDecomp(cjkDecompPath);
+        Map<String, CjkDecomp> decomp = readCjkDecomp(cjkDecompPath);
 
         Map<String, String[]> flattened = new HashMap<>();
         for (String character : decomp.keySet()) {
@@ -131,28 +146,28 @@ public class Main {
         return flattened;
     }
 
-    private static List<String> decomposeComponent(String comp, Set<String> radicals, Map<String, String[]> decomp, Map<String, String[]> flattened)
+    private static List<String> decomposeComponent(String comp, Set<String> radicals, Map<String, CjkDecomp> decomp, Map<String, String[]> flattened)
     {
-        String[] d = decomp.get(comp);
+        CjkDecomp d = decomp.get(comp);
         List<String> all = new ArrayList<>();
-        if (d.length == 1) {
-            all.add(d[0]);
+        if (d.comps.length == 1) {
+            all.add(d.comps[0]);
         }
-        else if (d.length == 0 || radicals.contains(comp)) {
+        else if (d.comps.length == 0 || radicals.contains(comp)) {
             all.add(comp);
         }
         else
         {
-            for (String subcomp : d)
+            for (String subcomp : d.comps)
                 all.addAll(decomposeComponent(subcomp, radicals, decomp, flattened));
         }
         flattened.put(comp, all.toArray(new String[all.size()]));
         return all;
     }
 
-    private static Map<String, String[]> readCjkDecomp(String path)
+    private static Map<String, CjkDecomp> readCjkDecomp(String path)
     {
-        Map<String, String[]> result = new HashMap<>();
+        Map<String, CjkDecomp> result = new HashMap<>();
         BufferedReader reader;
         try {
             reader = new BufferedReader(new FileReader(new File(path)));
@@ -164,15 +179,11 @@ public class Main {
                     continue;
                 String[] ss = line.split(":");
                 assert(ss.length == 2);
-                String allList = ss[1].substring(ss[1].indexOf('(')+1, ss[1].indexOf(')'));
-
-                String[] comps;
-                if (allList.length() == 0) {
-                    comps = new String[] {};
-                } else {
-                    comps = allList.split(",");
-                }
-                result.put(ss[0], comps);
+                int modifierEnd = ss[1].indexOf('(');
+                String modifier = ss[1].substring(0, modifierEnd);
+                String allList = ss[1].substring(modifierEnd+1, ss[1].indexOf(')'));
+                String[] comps = allList.length() > 0 ? allList.split(",") : new String[] {};
+                result.put(ss[0], new CjkDecomp(modifier, comps));
             }
         } catch (IOException e) {
             e.printStackTrace();

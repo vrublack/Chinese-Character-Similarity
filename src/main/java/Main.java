@@ -125,8 +125,8 @@ public class Main {
         public FlatDecomp(String comp, float left, float right, float top, float bottom)
         {
             this.comp = comp;
-            this.centerVertical = bottom + (top + bottom) / 2;
-            this.centerHorizontal = left + (left + right) / 2;
+            this.centerVertical = bottom + (top - bottom) / 2;
+            this.centerHorizontal = left + (right - left) / 2;
         }
     }
 
@@ -146,7 +146,8 @@ public class Main {
         Map<String, FlatDecomp[]> flattened = new HashMap<>();
         for (String character : decomp.keySet()) {
             try {
-                decomposeComponent(character, radicals, decomp, flattened, 0, 1.0f, 1.0f, 0);
+                List<FlatDecomp> all = decomposeComponent(character, radicals, decomp, flattened, 0, 1.0f, 1.0f, 0);
+                flattened.put(character, all.toArray(new FlatDecomp[all.size()]));
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -285,7 +286,6 @@ public class Main {
                     all.addAll(decomposeComponent(subcomp, radicals, decomp, flattened, left, right, top, bottom));
             }
         }
-        flattened.put(comp, all.toArray(new FlatDecomp[all.size()]));
         return all;
     }
 

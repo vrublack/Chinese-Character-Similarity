@@ -1,5 +1,6 @@
 import java.io.*;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.*;
 
 public class Main {
@@ -56,7 +57,7 @@ public class Main {
         }
     }
 
-    private static void computeSimilarityRanking(List<String> allChars, float[] similarities, Map<String, String[]> decomp, int cutoff, int i, final BufferedWriter br) {
+    private static void computeSimilarityRanking(List<String> allChars, float[] similarities, Map<String, FlatDecomp[]> decomp, int cutoff, int i, final BufferedWriter br) {
         // could start at j = i and then cache but cache would be very large
         for (int j = 0; j < allChars.size(); j++) {
             // don't want the character itself
@@ -118,7 +119,15 @@ public class Main {
     }
 
     private static class FlatDecomp {
+        String comp;
+        float centerVertical, centerHorizontal;
 
+        public FlatDecomp(String comp, float left, float right, float top, float bottom)
+        {
+            this.comp = comp;
+            this.centerVertical = bottom + (top + bottom) / 2;
+            this.centerHorizontal = left + (left + right) / 2;
+        }
     }
 
     /**
@@ -126,7 +135,7 @@ public class Main {
      * creates a list of all radicals the character consists of
      * @param args
      */
-    private static Map<String, String[]> flattenDecomposition(String[] args)
+    private static Map<String, FlatDecomp[]> flattenDecomposition(String[] args)
     {
         String cjkDecompPath = args[1];
         String stopRadicalsPath = args[2];
@@ -134,34 +143,149 @@ public class Main {
         Set<String> radicals = readRadicals(stopRadicalsPath);
         Map<String, CjkDecomp> decomp = readCjkDecomp(cjkDecompPath);
 
-        Map<String, String[]> flattened = new HashMap<>();
+        Map<String, FlatDecomp[]> flattened = new HashMap<>();
         for (String character : decomp.keySet()) {
-            decomposeComponent(character, radicals, decomp, flattened);
+            try {
+                decomposeComponent(character, radicals, decomp, flattened, 0, 1.0f, 1.0f, 0);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
         }
 
-        for (String[] charDecomp : flattened.values()) {
-            Arrays.sort(charDecomp);
+        // sort by component character
+        for (FlatDecomp[] charDecomp : flattened.values()) {
+            Arrays.sort(charDecomp, new Comparator<FlatDecomp>()
+            {
+                @Override
+                public int compare(FlatDecomp a, FlatDecomp b)
+                {
+                    return a.comp.compareTo(b.comp);
+                }
+            });
         }
 
         return flattened;
     }
 
-    private static List<String> decomposeComponent(String comp, Set<String> radicals, Map<String, CjkDecomp> decomp, Map<String, String[]> flattened)
+    private static List<FlatDecomp> decomposeComponent(String comp, Set<String> radicals, Map<String, CjkDecomp> decomp,
+                                                   Map<String, FlatDecomp[]> flattened, float left, float right, float top, float bottom) throws ParseException
     {
+        float width = right - left;
+        float height = top - bottom;
+        assert(width >= 0 && height >= 0);
+
         CjkDecomp d = decomp.get(comp);
-        List<String> all = new ArrayList<>();
-        if (d.comps.length == 1) {
-            all.add(d.comps[0]);
-        }
-        else if (d.comps.length == 0 || radicals.contains(comp)) {
-            all.add(comp);
+        List<FlatDecomp> all = new ArrayList<>();
+        if (d.comps.length == 0 || radicals.contains(comp)) {
+            all.add(new FlatDecomp(comp, left, right, top, bottom));
         }
         else
         {
-            for (String subcomp : d.comps)
-                all.addAll(decomposeComponent(subcomp, radicals, decomp, flattened));
+            if (d.modifier.equals("c")) {
+                // no recursion since no constituents
+                throw new ParseException("Malformatted decomp for " + comp, 0);
+            }
+            else if (d.modifier.startsWith("m")) {
+                // modified, may include punishment factor later
+                all.addAll(decomposeComponent(d.comps[0], radicals, decomp, flattened, left, right, top, bottom));
+            }
+            else if (d.modifier.startsWith("w")) {
+                // second constituent somehow contained within the first one. Assume it has the same dimensions
+                for (String subcomp : d.comps)
+                    all.addAll(decomposeComponent(subcomp, radicals, decomp, flattened, left, right, top, bottom));
+            }
+            else if (d.modifier.startsWith("b")) {
+                // second between first moving across or downwards. Not important, applies to few characters
+                for (String subcomp : d.comps)
+                    all.addAll(decomposeComponent(subcomp, radicals, decomp, flattened, left, right, top, bottom));
+            }
+            else if (d.modifier.startsWith("lock")) {
+                // components locked together. Assume it has the same dimensions
+                for (String subcomp : d.comps)
+                    all.addAll(decomposeComponent(subcomp, radicals, decomp, flattened, left, right, top, bottom));
+            } else if (d.modifier.startsWith("s")) {
+                // first component surrounds second
+                float left2, right2, top2, bottom2;
+                if (d.modifier.startsWith("stl")) {
+                    left2 = left + width / 2;
+                    right2 = right;
+                    top2 = bottom + height / 2;
+                    bottom2 = bottom;
+                }
+                else if (d.modifier.startsWith("sbl")) {
+                    left2 = left + width / 2;
+                    right2 = right;
+                    top2 = top;
+                    bottom2 = bottom + height / 2;
+                }
+                else if (d.modifier.startsWith("str")) {
+                    left2 = left;
+                    right2 = left + width / 2;
+                    top2 = bottom + height / 2;
+                    bottom2 = bottom;
+                }
+                else if (d.modifier.startsWith("sbr")) {
+                    left2 = left;
+                    right2 = left + width / 2;
+                    top2 = top;
+                    bottom2 = bottom + height / 2;
+                }
+                else if (d.modifier.startsWith("sl")) {
+                    left2 = left + width / 2;
+                    right2 = right;
+                    top2 = top - height / 4;
+                    bottom2 = bottom + height / 4;
+                }
+                else if (d.modifier.startsWith("sr")) {
+                    left2 = left;
+                    right2 = left + width / 2;;
+                    top2 = top - height / 4;
+                    bottom2 = bottom + height / 4;
+                }
+                else if (d.modifier.startsWith("st")) {
+                    left2 = left + width / 4;
+                    right2 = right - width / 4;
+                    top2 = bottom + height / 2;
+                    bottom2 = bottom;
+                }
+                else if (d.modifier.startsWith("sb")) {
+                    left2 = left + width / 4;
+                    right2 = right - width / 4;
+                    top2 = top;
+                    bottom2 = bottom + height / 2;
+                }
+                else {
+                    left2 = left + width / 4;
+                    right2 = right - width / 4;
+                    top2 = top - height / 4;
+                    bottom2 = bottom + height / 4;
+                }
+
+                all.addAll(decomposeComponent(d.comps[0], radicals, decomp, flattened, left, right, top, bottom));
+                all.addAll(decomposeComponent(d.comps[1], radicals, decomp, flattened, left2, right2, top2, bottom2));
+            }
+            else if (d.modifier.startsWith("a")) {
+                // side to side
+                float hSplit = left + width / 2;
+                all.addAll(decomposeComponent(d.comps[0], radicals, decomp, flattened, left, hSplit, top, bottom));
+                all.addAll(decomposeComponent(d.comps[1], radicals, decomp, flattened, hSplit, right, top, bottom));
+            }
+            else if (d.modifier.startsWith("d")) {
+                // top to bottom
+                float vSplit = bottom + height / 2;
+                all.addAll(decomposeComponent(d.comps[0], radicals, decomp, flattened, left, right, top, vSplit));
+                all.addAll(decomposeComponent(d.comps[1], radicals, decomp, flattened, left, right, vSplit, bottom));
+            }
+            else if (d.modifier.startsWith("r")) {
+                // TODO
+                all.addAll(decomposeComponent(d.comps[0], radicals, decomp, flattened, left, right, top, bottom));
+            } else {
+                // unknow, assume they both cover the width of the component
+                for (String subcomp : d.comps)
+                    all.addAll(decomposeComponent(subcomp, radicals, decomp, flattened, left, right, top, bottom));
+            }
         }
-        flattened.put(comp, all.toArray(new String[all.size()]));
+        flattened.put(comp, all.toArray(new FlatDecomp[all.size()]));
         return all;
     }
 
@@ -218,7 +342,7 @@ public class Main {
     private static void createSimilarityRanking(String[] args) {
         long start = System.currentTimeMillis();
 
-        final Map<String, String[]> decomp = flattenDecomposition(args);
+        final Map<String, FlatDecomp[]> decomp = flattenDecomposition(args);
         final String outputFname = args[3];
         final int cutoff = Integer.parseInt(args[4]);
         final int nThreads = Integer.parseInt(args[5]);
@@ -270,7 +394,7 @@ public class Main {
 
         final String testcasesFname = args[3];
 
-        final Map<String, String[]> decomp = flattenDecomposition(args);
+        final Map<String, FlatDecomp[]> decomp = flattenDecomposition(args);
         final List<String[]> testcases = readTestcases(testcasesFname);
         final List<String> allChars = new ArrayList<>(decomp.keySet());
 
@@ -342,34 +466,36 @@ public class Main {
      *
      * @return Value between 0 (very dissimilar) and 1 (identical)
      */
-    private static float calculateCharSimilarity(String c1, String c2, Map<String, String[]> decomp) {
+    private static float calculateCharSimilarity(String c1, String c2, Map<String, FlatDecomp[]> decomp) {
         if (c1.equals(c2))
             return 1;
 
+        // TODO incorporate positions within the character
+
         // component overlap
         float totalScore = 0;
-        String[] dc1 = decomp.get(c1);
-        String[] dc2 = decomp.get(c2);
+        FlatDecomp[] dc1 = decomp.get(c1);
+        FlatDecomp[] dc2 = decomp.get(c2);
 
         int i = 0;
         int j = 0;
 
         while (i < dc1.length && j < dc2.length) {
-            if (dc1[i].equals(dc2[j])) {
-                String sameComp = dc1[i];
-                while (i < dc1.length && dc1[i].equals(sameComp) && j < dc2.length && dc2[j].equals(sameComp)) {
+            if (dc1[i].comp.equals(dc2[j].comp)) {
+                String sameComp = dc1[i].comp;
+                while (i < dc1.length && dc1[i].comp.equals(sameComp) && j < dc2.length && dc2[j].comp.equals(sameComp)) {
                     i++;
                     j++;
                     totalScore += 2;
                 }
                 // additional occurrences of the same character in only one decomposition don't increase the score
-                while (i < dc1.length && dc1[i].equals(sameComp)) {
+                while (i < dc1.length && dc1[i].comp.equals(sameComp)) {
                     i++;
                 }
-                while (j < dc2.length && dc2[j].equals(sameComp)) {
+                while (j < dc2.length && dc2[j].comp.equals(sameComp)) {
                     j++;
                 }
-            } else if (dc1[i].compareTo(dc2[j]) < 0) {  // advance pointer to smaller component
+            } else if (dc1[i].comp.compareTo(dc2[j].comp) < 0) {  // advance pointer to smaller component
                 i++;
             } else {
                 j++;

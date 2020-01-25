@@ -111,6 +111,29 @@ Encircled numerics ① ～ ⑳ represents unencoded DCs. Number denotes its stro
 
 
 
+Character 脸: 睑 崄 朕 检 硷 𤥍 䏭 𦜮 䀹 昳 眣 𣇍 𥅴 𦝤 㖭 胅 脥 𣍰 𤙊 𦜞 , Reference: 签 (2670), 应 (44205),  -> Score 3.857023E-4
+
+
+Character 坏: 圷 环 墲 吥 𡌏 坯 坼 㘰 𥐴 嘸 𡉨 𤥅 苤 杯 𤘢 肧 𧉈 𡛨 㺪 𣁮 , Reference: 环 (1), 不 (5816),  -> Score 0.50008595
+
++ maybe include the direction of the stroke? Probably no data for this
++ maybe abort decomposition below a certain number of radicals
+
+
+Character 甜: 𪽀 𦧏 𨍻 𤱙 𦧙 鄻 鄑 靠 𫕺 𧣑 𩠽 𣁳 𦧌 𦧋 𣒞 𤛕 僵 𤱝 37927 䑙 , Reference: 甘 (68084),  -> Score 1.4687523E-5
+
+
+
+
+Character 彫: 畔 𤱃 𤰼 㽛 畞 23207 𠣯 𠣱 𤰾 𠣲 𦴳 𣎁 𤱅 𧣈 㬷 脨 䑙 䑚 㽤 𤱬 , Reference: 周 (381), 調 (20129),  -> Score 0.0026426397
++ here the tolerance is too high so dissimilar components get matched. Algo with less splitting better here:
+Character 彫: 簓 𦸔 𧐸 㓮 㣍 翢 郮 雕 鵰 𢒦 𢽧 𣍼 𫛲 99698 99696 周 畛 𠲲 𢒡 𢒙 , Reference: 周 (15), 調 (122),  -> Score 0.06656504
+
+
++ on the other hand, if the reference doesn't really share many strokes with the source, splitting into more components works better:
+Character 寓: 䦸 𡺥 𡴥 𡼁 𥧆 𠾧 16125 𣈦 䍠 萬 92894 39295 𤲳 𦦷 𡴗 𡪾 𡹭 𡩷 嵬 94218 , Reference: 离 (367), 隅 (262),  -> Score 0.004618532
++ works better than:
+Character 寓: 𥧆 92894 𤲳 𡺥 𣈦 𠾧 𥝇 𥜿 𩮐 10584 16125 𡫢 䦸 𠿄 𣛡 𪿀 䴁 歶 萬 𦦔 , Reference: 离 (12772), 隅 (182),  -> Score 0.0028105306
 
 
 

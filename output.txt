@@ -66,4 +66,4 @@ Character 快: 𢭴 𧋿 㭈 㹟 䀗 䏐 䦼 决 吷 块 妜 抉 決 炔 玦 砄
 Avg score: 0.052190024
 Avg position: 738.8913
 Percentage position < 500: 65.486725
-Done after 4575 ms
+Done after 4477 ms

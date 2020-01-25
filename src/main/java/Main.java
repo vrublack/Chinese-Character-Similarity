@@ -402,6 +402,8 @@ public class Main {
         int scoreCount = 0;
         int posSum = 0;
         int posCount = 0;
+        int under500 = 0;
+        int under500Total = 0;
 
         final float[] similarities = new float[allChars.size()];
         for (int i = 0; i < testcases.size(); i++) {
@@ -442,6 +444,10 @@ public class Main {
                 if (rankedPos == -1)
                     rankedPos = 10000000;
 
+                if (rankedPos < 500)
+                    under500++;
+                under500Total++;
+
                 positions.add(rankedPos);
 
                 score += 1.0f / k * 1.0f / (rankedPos + 1);
@@ -458,6 +464,7 @@ public class Main {
 
         System.out.println("Avg score: " + totalScore / scoreCount);
         System.out.println("Avg position: " + (float) posSum / posCount);
+        System.out.println("Percentage position < 500: " + 100 * (float) under500 / under500Total);
         System.out.println("Done after " + (System.currentTimeMillis() - start) + " ms");
     }
 

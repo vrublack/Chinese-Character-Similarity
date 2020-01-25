@@ -65,4 +65,5 @@ Character 日: 22104 䀠 昌 昍 晶 曰 目 瞐 37504 53775 𡆤 𣊫 𣊭 𪱈
 Character 快: 㭈 𢘧 𢗆 㹟 䦼 怉 仗 㤨 杖 怩 61589 𥹑 怄 𥝭 怫 粌 粑 𦓨 62241 怑 , Reference: 筷 (849), 块 (85), 决 (464),  -> Score 0.00770727
 Avg score: 0.032921858
 Avg position: 9035.759
-Done after 11930 ms
+Percentage position < 500: 38.053097
+Done after 10861 ms

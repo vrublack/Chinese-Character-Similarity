@@ -283,4 +283,40 @@ public class Resources  {
         }
     }
 
+    /**
+     *
+     * @param decomp
+     * @return Rarity from 0 (very common) to 1 (very rare)
+     */
+    public static Map<String, Float> computeCharRarity(Map<String, FlatDecomp[]> decomp) {
+        int totalComps = 0;
+        Map<String, Integer> absoluteFreq = new HashMap<>();
+        for (Map.Entry<String, FlatDecomp[]> entry : decomp.entrySet()) {
+            for (FlatDecomp com : entry.getValue()) {
+                if (!absoluteFreq.containsKey(com.comp)) {
+                    absoluteFreq.put(com.comp, 0);
+                }
+                absoluteFreq.put(com.comp, absoluteFreq.get(com.comp) + 1);
+                totalComps++;
+            }
+        }
+
+        Map<String, Float> relativeFreq = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : absoluteFreq.entrySet()) {
+            relativeFreq.put(entry.getKey(), 1.0f / (entry.getValue() / (float) totalComps));
+        }
+
+        // rescale variance
+        final float targetVariance = 1.0f;  // factor to reduce the variance by
+        final float variance = Statistics.calculateVariance(relativeFreq.values());
+        final float stddev = (float) Math.sqrt(variance);
+
+        for (Map.Entry<String, Float> entry : relativeFreq.entrySet()) {
+            float normalized = entry.getValue() / (stddev / targetVariance);
+            float clipped = Math.max(0, Math.min(1, normalized));   // clip to  [0, 1]
+            relativeFreq.put(entry.getKey(), clipped);
+        }
+
+        return relativeFreq;
+    }
 }

@@ -7,12 +7,12 @@ import java.util.*;
 public class Main {
 
     private static void computeSimilarityRanking(List<String> allChars, float[] similarities, Map<String, FlatDecomp[]> decomp, Map<String, String[]> jpnToChin,
-                                                 int cutoff, int i, final BufferedWriter br) {
+                                                 final Map<String, Float> charRar, int cutoff, int i, final BufferedWriter br) {
         // could start at j = i and then cache but cache would be very large
         for (int j = 0; j < allChars.size(); j++) {
             // don't want the character itself
             if (i != j) {
-                similarities[j] = calculateCharSimilarity(allChars.get(i), allChars.get(j), decomp, jpnToChin);
+                similarities[j] = calculateCharSimilarity(allChars.get(i), allChars.get(j), decomp, jpnToChin, charRar);
             } else {
                 similarities[j] = 0;
             }
@@ -66,6 +66,7 @@ public class Main {
         final String jpnToChinFname = args[6];
 
         final Map<String, String[]> jpnToChin = Resources.readJapaneseToSimplChinese(jpnToChinFname);
+        final Map<String, Float> charRar = Resources.computeCharRarity(decomp);
 
         final List<String> allChars = new ArrayList<>(decomp.keySet());
         try {
@@ -80,7 +81,7 @@ public class Main {
                     public void run() {
                         final float[] similarities = new float[allChars.size()];
                         for (int i = startIndex; i < endIndex; i++) {
-                            computeSimilarityRanking(allChars, similarities, decomp, jpnToChin, cutoff, i, br);
+                            computeSimilarityRanking(allChars, similarities, decomp, jpnToChin, charRar, cutoff, i, br);
                             if ((i - startIndex) % 100 == 0)
                                 System.out.println(NumberFormat.getIntegerInstance().format(i - startIndex) + "/" + NumberFormat.getIntegerInstance().format(endIndex - startIndex));
                         }
@@ -119,6 +120,7 @@ public class Main {
         final List<String[]> testcases = Resources.readTestcases(testcasesFname);
         final List<String> allChars = new ArrayList<>(decomp.keySet());
         final Map<String, String[]> jpnToChin = Resources.readJapaneseToSimplChinese(jpnToChinFname);
+        final Map<String, Float> charRar = Resources.computeCharRarity(decomp);
 
         float totalScore = 0;
         int scoreCount = 0;
@@ -137,7 +139,7 @@ public class Main {
             for (int j = 0; j < allChars.size(); j++) {
                 // don't want the character itself
                 if (!character.equals(allChars.get(j))) {
-                    similarities[j] = calculateCharSimilarity(character, allChars.get(j), decomp, jpnToChin);
+                    similarities[j] = calculateCharSimilarity(character, allChars.get(j), decomp, jpnToChin, charRar);
                 } else {
                     similarities[j] = 0;
                 }
@@ -195,7 +197,7 @@ public class Main {
      *
      * @return Value between 0 (very dissimilar) and 1 (identical)
      */
-    private static float calculateCharSimilarity(String c1, String c2, Map<String, FlatDecomp[]> decomp, Map<String, String[]> jpnToChin) {
+    private static float calculateCharSimilarity(String c1, String c2, Map<String, FlatDecomp[]> decomp, Map<String, String[]> jpnToChin, Map<String, Float> charRar) {
         if (c1.equals(c2))
             return 1;
 
@@ -251,8 +253,10 @@ public class Main {
                 Arrays.sort(pairSimilarities);
                 // take the K top probabilities so that every component can only be matched once
                 final int K = Math.min(occs1, occs2);
+                // weigh matches of rare components more
+                final float rarity = charRar.get(sameComp);
                 for (int k = pairSimilarities.length - 1; k >= pairSimilarities.length - K; k--) {
-                    totalScore += 2 * pairSimilarities[k];
+                    totalScore += 2 * pairSimilarities[k] * rarity;
                 }
 
             } else if (dc1[i].comp.compareTo(dc2[j].comp) < 0) {  // advance pointer to smaller component

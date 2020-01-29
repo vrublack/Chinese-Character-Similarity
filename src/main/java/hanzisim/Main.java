@@ -286,48 +286,14 @@ public class Main {
         FlatDecomp[] dc1 = decomp.get(c1);
         FlatDecomp[] dc2 = decomp.get(c2);
 
-        int i = 0;
-        int j = 0;
-
-        while (i < dc1.length && j < dc2.length) {
-            if (dc1[i].comp.equals(dc2[j].comp)) {
-                String sameComp = dc1[i].comp;
-                final int startI = i;
-                final int startJ = j;
-                // additional occurrences of the same character in only one decomposition don't increase the score
-                while (i < dc1.length && dc1[i].comp.equals(sameComp)) {
-                    i++;
+        for (int i = 0; i < dc1.length; i++) {
+            for (int j = 0; j < dc2.length; j++) {
+                if (dc1[i].comp.equals(dc2[j].comp)) {
+                    totalScore += 1;
+                    break;
                 }
-                while (j < dc2.length && dc2[j].comp.equals(sameComp)) {
-                    j++;
-                }
-
-                final int occs1 = i - startI;
-                final int occs2 = j - startJ;
-
-                float[] pairSimilarities = new float[occs1 * occs2];
-                // match every occurrence from dc1 with dc2
-                for (int matchI = startI; matchI < i; matchI++) {
-                    for (int matchJ = startJ; matchJ < j; matchJ++) {
-                        pairSimilarities[(matchI - startI) * occs2 + (matchJ - startJ)] = calculatePositionSimilarity(dc1[matchI].centerHorizontal,
-                                dc1[matchI].centerVertical, dc2[matchJ].centerHorizontal, dc2[matchJ].centerVertical);
-                    }
-                }
-                Arrays.sort(pairSimilarities);
-                // take the K top probabilities so that every component can only be matched once
-                final int K = Math.min(occs1, occs2);
-                for (int k = pairSimilarities.length - 1; k >= pairSimilarities.length - K; k--) {
-                    totalScore += 2 * pairSimilarities[k];
-                }
-
-            } else if (dc1[i].comp.compareTo(dc2[j].comp) < 0) {  // advance pointer to smaller component
-                i++;
-            } else {
-                j++;
             }
         }
-
-        totalScore /= dc1.length + dc2.length;
 
         return totalScore;
     }

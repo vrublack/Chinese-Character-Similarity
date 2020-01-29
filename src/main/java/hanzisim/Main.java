@@ -1,5 +1,7 @@
 package hanzisim;
 
+import org.apache.commons.cli.*;
+
 import java.io.*;
 import java.text.NumberFormat;
 import java.util.*;
@@ -36,6 +38,13 @@ public class Main {
         }
     }
 
+    private static Option makeOption(String longName, String description, boolean required, Class type) {
+        Option option = new Option(String.valueOf(longName.charAt(0)), longName, true, description);
+        option.setRequired(required);
+        option.setType(type);
+        return option;
+    }
+
     /***
      *
      * @param args 0 - method, 1 - decomp filename, 2 - matrix output filename, 3 - sorted similarity list output filename, 4 - number of similar characters to include
@@ -45,25 +54,80 @@ public class Main {
             System.out.println("Warning: DEBUG is turned on");
         }
 
-        if (args.length > 0 && args[0].equals("create")) {
-            createSimilarityRanking(args);
-        } else if (args.length > 0 && args[0].equals("evaluate")) {
-            evaluateSimilarityRanking(args);
-        } else {
-            System.err.println("Unknown method");
+        Options options = new Options();
+        options.addOption(makeOption("method", "create or evaluate", true, String.class));
+
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
+
+        String method;
+
+        try {
+            cmd = parser.parse(options, args, true);
+
+            method = cmd.getOptionValue("method");
+            if (method.equals("create")) {
+                options = makeCreateOptions();
+            } else if (method.equals("evaluate")) {
+                options = makeEvaluateOptions();
+            } else {
+                System.err.println("Invalid method");
+                System.exit(1);
+                return;
+            }
+
+            cmd = parser.parse(options, args);
+
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp("Character Similarity", options);
             System.exit(1);
+            return;
         }
+        try {
+            if (method.equals("create")) {
+                    createSimilarityRanking(cmd);
+            } else if (method.equals("evaluate")) {
+                evaluateSimilarityRanking(cmd);
+            }
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
     }
 
-    private static void createSimilarityRanking(String[] args) {
+    private static Options makeEvaluateOptions() {
+        Options options = new Options();
+        options.addOption(makeOption("method", "create or evaluate", true, String.class));
+        options.addOption(makeOption("decomp", "Path to CJK decomposition", true, String.class));
+        options.addOption(makeOption("radicals", "File with radicals to stop decomposition at", true, String.class));
+        options.addOption(makeOption("jpn2chin", "Filename of Japanese to simplified Chinese mapping", true, String.class));
+        options.addOption(makeOption("testcases", "Filename of testcases for evaluation", true, String.class));
+        return options;
+    }
+
+    private static Options makeCreateOptions() {
+        Options options = new Options();
+        options.addOption(makeOption("method", "create or evaluate", true, String.class));
+        options.addOption(makeOption("decomp", "Path to CJK decomposition", true, String.class));
+        options.addOption(makeOption("radicals", "File with radicals to stop decomposition at", true, String.class));
+        options.addOption(makeOption("output", "Filename of output ranking file", true, String.class));
+        options.addOption(makeOption("cutoff", "The top k characters to include", true, Number.class));
+        options.addOption(makeOption("threads", "How many threads to split the computation into", true, Number.class));
+        options.addOption(makeOption("jpn2chin", "Filename of Japanese to simplified Chinese mapping", true, String.class));
+        return options;
+    }
+
+    private static void createSimilarityRanking(CommandLine args) throws ParseException {
         long start = System.currentTimeMillis();
 
         final Map<String, FlatDecomp[]> decomp = Resources.flattenDecomposition(args);
 
-        final String outputFname = args[3];
-        final int cutoff = Integer.parseInt(args[4]);
-        final int nThreads = Integer.parseInt(args[5]);
-        final String jpnToChinFname = args[6];
+        final String outputFname = args.getOptionValue("output");
+        final int cutoff = ((Number)args.getParsedOptionValue("cutoff")).intValue();
+        final int nThreads = ((Number)args.getParsedOptionValue("threads")).intValue();
+        final String jpnToChinFname = args.getOptionValue("jpn2chin");
 
         final Map<String, String[]> jpnToChin = Resources.readJapaneseToSimplChinese(jpnToChinFname);
         final Map<String, Float> charRar = Resources.computeCharRarity(decomp);
@@ -110,11 +174,11 @@ public class Main {
         System.out.println("Done after " + (System.currentTimeMillis() - start) + " ms");
     }
 
-    private static void evaluateSimilarityRanking(String[] args) {
+    private static void evaluateSimilarityRanking(CommandLine args) {
         long start = System.currentTimeMillis();
 
-        final String testcasesFname = args[3];
-        final String jpnToChinFname = args[4];
+        final String testcasesFname = args.getOptionValue("testcases");
+        final String jpnToChinFname = args.getOptionValue("jpn2chin");
 
         final Map<String, FlatDecomp[]> decomp = Resources.flattenDecomposition(args);
         final List<String[]> testcases = Resources.readTestcases(testcasesFname);

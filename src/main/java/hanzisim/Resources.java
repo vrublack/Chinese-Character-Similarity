@@ -1,5 +1,7 @@
 package hanzisim;
 
+import org.apache.commons.cli.CommandLine;
+
 import java.io.*;
 import java.text.ParseException;
 import java.util.*;
@@ -12,9 +14,9 @@ public class Resources  {
      *
      * @param args
      */
-    public static Map<String, FlatDecomp[]> flattenDecomposition(String[] args) {
-        String cjkDecompPath = args[1];
-        String stopRadicalsPath = args[2];
+    public static Map<String, FlatDecomp[]> flattenDecomposition(CommandLine args) {
+        String cjkDecompPath = args.getOptionValue("decomp");
+        String stopRadicalsPath = args.getOptionValue("radicals");
 
         Set<String> radicals = readRadicals(stopRadicalsPath);
         Map<String, CjkDecomp> decomp = readCjkDecomp(cjkDecompPath);

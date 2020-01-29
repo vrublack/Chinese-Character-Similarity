@@ -38,8 +38,8 @@ public class Main {
         }
     }
 
-    private static Option makeOption(String longName, String description, boolean required, Class type) {
-        Option option = new Option(String.valueOf(longName.charAt(0)), longName, true, description);
+    private static Option makeOption(String shortName, String longName, String description, boolean required, Class type) {
+        Option option = new Option(shortName, longName, true, description);
         option.setRequired(required);
         option.setType(type);
         return option;
@@ -55,7 +55,7 @@ public class Main {
         }
 
         Options options = new Options();
-        options.addOption(makeOption("method", "create or evaluate", true, String.class));
+        options.addOption(makeOption("m", "method", "create or evaluate", true, String.class));
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -99,23 +99,24 @@ public class Main {
 
     private static Options makeEvaluateOptions() {
         Options options = new Options();
-        options.addOption(makeOption("method", "create or evaluate", true, String.class));
-        options.addOption(makeOption("decomp", "Path to CJK decomposition", true, String.class));
-        options.addOption(makeOption("radicals", "File with radicals to stop decomposition at", true, String.class));
-        options.addOption(makeOption("jpn2chin", "Filename of Japanese to simplified Chinese mapping", true, String.class));
-        options.addOption(makeOption("testcases", "Filename of testcases for evaluation", true, String.class));
+        options.addOption(makeOption("m","method", "create or evaluate", true, String.class));
+        options.addOption(makeOption("d","decomp", "Path to CJK decomposition", true, String.class));
+        options.addOption(makeOption("r","radicals", "File with radicals to stop decomposition at", true, String.class));
+        options.addOption(makeOption("j", "jpn2chin", "Filename of Japanese to simplified Chinese mapping", true, String.class));
+        options.addOption(makeOption("s","testcases", "Filename of testcases for evaluation", true, String.class));
         return options;
     }
 
     private static Options makeCreateOptions() {
         Options options = new Options();
-        options.addOption(makeOption("method", "create or evaluate", true, String.class));
-        options.addOption(makeOption("decomp", "Path to CJK decomposition", true, String.class));
-        options.addOption(makeOption("radicals", "File with radicals to stop decomposition at", true, String.class));
-        options.addOption(makeOption("output", "Filename of output ranking file", true, String.class));
-        options.addOption(makeOption("cutoff", "The top k characters to include", true, Number.class));
-        options.addOption(makeOption("threads", "How many threads to split the computation into", true, Number.class));
-        options.addOption(makeOption("jpn2chin", "Filename of Japanese to simplified Chinese mapping", true, String.class));
+        options.addOption(makeOption("m", "method", "create or evaluate", true, String.class));
+        options.addOption(makeOption("d", "decomp", "Path to CJK decomposition", true, String.class));
+        options.addOption(makeOption("r", "radicals", "File with radicals to stop decomposition at", true, String.class));
+        options.addOption(makeOption("o", "output", "Filename of output ranking file", true, String.class));
+        options.addOption(makeOption("c", "cutoff", "The top k characters to include", true, Number.class));
+        options.addOption(makeOption("t","threads", "How many threads to split the computation into", true, Number.class));
+        options.addOption(makeOption("j", "jpn2chin", "Filename of Japanese to simplified Chinese mapping", true, String.class));
+        options.addOption(makeOption("e", "restrict", "Restrict characters to ones occurring in the specified file", false, String.class));
         return options;
     }
 

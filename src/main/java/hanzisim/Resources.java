@@ -21,8 +21,13 @@ public class Resources  {
         Set<String> radicals = readRadicals(stopRadicalsPath);
         Map<String, CjkDecomp> decomp = readCjkDecomp(cjkDecompPath);
 
+        final Set<String> restrictSet = args.hasOption("restrict") ? Resources.readFileCharSet(args.getOptionValue("restrict")) : new HashSet<>();
+
         Map<String, FlatDecomp[]> flattened = new HashMap<>();
         for (String character : decomp.keySet()) {
+            if (!restrictSet.contains(character))
+                continue;
+
             try {
                 List<FlatDecomp> all = decomposeComponent(character, radicals, decomp, flattened, 0, 1.0f, 1.0f, 0);
                 flattened.put(character, all.toArray(new FlatDecomp[all.size()]));
@@ -277,6 +282,26 @@ public class Resources  {
         }
 
         return result;
+    }
+
+    public static Set<String> readFileCharSet(String fname) {
+        Set<String> charSet = new HashSet<>();
+
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(new File(fname)));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                for (int i = 0; i < line.length(); i++) {
+                    charSet.add(String.valueOf(line.charAt(i)));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        return charSet;
     }
 
     public static void write(final BufferedWriter br, final String s) throws IOException {

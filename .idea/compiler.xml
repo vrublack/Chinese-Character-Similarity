@@ -20,7 +20,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="11">
-      <module name="CharacterSimilarity" target="11" />
+      <module name="CharacterSimilarity" target="1.11" />
     </bytecodeTargetLevel>
   </component>
 </project>
